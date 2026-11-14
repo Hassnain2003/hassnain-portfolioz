@@ -30,12 +30,12 @@ const PROJECT_META: Record<string, {
 };
 
 const PROJECT_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
-  AgentDine: { x: -4, y: 2, z: -2 },
-  "kube-triage": { x: 4, y: 1, z: -2 },
+  AgentDine: { x: -3.5, y: 2, z: -2 },
+  "kube-triage": { x: 3.5, y: 1, z: -2 },
   "OpenAI LLM Gateway": { x: 0, y: 2.5, z: -3 },
-  "Algorithmic trading engine": { x: -4, y: -1.5, z: 1 },
-  "D&Z Cartique": { x: 4, y: -0.5, z: 0 },
-  QLSS: { x: 0, y: -1.5, z: 1 },
+  "Algorithmic trading engine": { x: -3.5, y: -1.5, z: 2 },
+  "D&Z Cartique": { x: 3.5, y: -0.5, z: 0 },
+  QLSS: { x: 0, y: -1.5, z: 0 },
 };
 
 const PROJECT_TAGS: Record<string, string[]> = {
