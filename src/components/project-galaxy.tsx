@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { SphereGeometry, BoxGeometry, BufferGeometry, Float32BufferAttribute, LineBasicMaterial, PointsMaterial } from "three";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { SphereGeometry, BoxGeometry, BufferGeometry, Float32BufferAttribute, PointsMaterial } from "three";
 import * as THREE from "three";
 import { facts } from "@/data/facts";
 import Link from "next/link";
@@ -158,70 +158,6 @@ function HolographicCube({ color = 0x00f2ff }: { color?: number }) {
   );
 }
 
-function LabelsOverlay({ projects, positions }: { projects: typeof facts.projects; positions: Record<string, { x: number; y: number; z: number }> }) {
-  const { camera, size } = useThree();
-  const [labelPositions, setLabelPositions] = useState(
-    projects.map(() => ({ x: 0, y: 0, visible: false }))
-  );
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  useFrame((state: any) => {
-    const vector = new THREE.Vector3();
-    const newPositions = projects.map((p) => {
-      const pos = positions[p.name];
-      const radius = SIZE_RADIUS[PROJECT_META[p.name].size];
-      vector.set(pos.x, pos.y + radius + 1.5, pos.z);
-      vector.project(camera);
-
-      const x = (vector.x * 0.5 + 0.5) * size.width;
-      const y = (-(vector.y * 0.5) + 0.5) * size.height;
-
-      return { x, y, visible: vector.z <= 1 };
-    });
-    setLabelPositions(newPositions);
-  });
-
-  return (
-    <div className="absolute inset-0 pointer-events-none z-50">
-      {projects.map((p, i) => {
-        const lp = labelPositions[i];
-        const meta = PROJECT_META[p.name];
-        return (
-          <div
-            key={p.name}
-            className="absolute"
-            style={{
-              left: Math.round(lp.x) + "px",
-              top: Math.round(lp.y) + "px",
-              transform: "translate(-50%, -100%)",
-              pointerEvents: "none",
-              color: "#fff",
-              fontSize: 10,
-              fontWeight: 800,
-              fontFamily: "monospace",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              textAlign: "center",
-              textShadow: "0 0 10px rgba(0,0,0,1)",
-              whiteSpace: "nowrap",
-              opacity: lp.visible ? 1 : 0,
-              background: "rgba(5,5,5,0.85)",
-              padding: "2px 6px",
-              borderRadius: "4px",
-              border: "1px solid rgba(0,242,255,0.35)",
-              backdropFilter: "blur(4px)",
-              WebkitTextStroke: "none",
-              visibility: lp.visible ? "visible" : "hidden",
-            }}
-          >
-            {p.name}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export function ProjectGalaxy() {
   const [selected, setSelected] = useState<string | null>(DEFAULT_SELECTED);
   const project = selected ? facts.projects.find((p) => p.name === selected) : null;
@@ -249,7 +185,7 @@ export function ProjectGalaxy() {
 
   const lineGeometry = new BufferGeometry();
   lineGeometry.setAttribute("position", new Float32BufferAttribute(linePositions, 3));
-  const lineMaterial = new LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.15 });
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.15 });
 
   return (
     <section id="projects" className="section relative overflow-hidden">
@@ -288,7 +224,47 @@ export function ProjectGalaxy() {
               <HolographicCube color={0x00f2ff} />
               <ParticleField />
             </Canvas>
-            <LabelsOverlay projects={facts.projects} positions={positions} />
+
+            {/* Label overlays positioned over canvas */}
+            <div className="absolute inset-0 pointer-events-none">
+              {facts.projects.map((p) => {
+                const pos = positions[p.name];
+                const meta = PROJECT_META[p.name];
+                const radius = SIZE_RADIUS[meta.size];
+                const labelX = Math.round(((pos.x / Math.abs(pos.z)) * 45 + 1) / 2 * 100);
+                const labelY = Math.round((1 - ((pos.y / Math.abs(pos.z)) * 45 + 1) / 2) * 100);
+                return (
+                  <div
+                    key={p.name}
+                    className="absolute"
+                    style={{
+                      left: `${labelX}%`,
+                      top: `${labelY}%`,
+                      transform: "translate(-50%, -100%)",
+                      pointerEvents: "none",
+                      color: "#fff",
+                      fontSize: 10,
+                      fontWeight: 800,
+                      fontFamily: "monospace",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                      textAlign: "center",
+                      textShadow: "0 0 10px rgba(0,0,0,1)",
+                      whiteSpace: "nowrap",
+                      opacity: 1,
+                      background: "rgba(5,5,5,0.85)",
+                      padding: "2px 6px",
+                      borderRadius: "4px",
+                      border: "1px solid rgba(0,242,255,0.35)",
+                      backdropFilter: "blur(4px)",
+                      WebkitTextStroke: "none",
+                    }}
+                  >
+                    {p.name}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Selected project detail panel - desktop only */}
