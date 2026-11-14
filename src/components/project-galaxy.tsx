@@ -30,12 +30,12 @@ const PROJECT_META: Record<string, {
 };
 
 const PROJECT_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
-  AgentDine: { x: -2, y: 1.5, z: -2 },
-  "kube-triage": { x: 2, y: 0.5, z: -2 },
-  "OpenAI LLM Gateway": { x: 0, y: 2, z: -3 },
-  "Algorithmic trading engine": { x: -2, y: -1.5, z: 0 },
-  "D&Z Cartique": { x: 2, y: -0.5, z: 1 },
-  QLSS: { x: 0, y: -1.5, z: 1.5 },
+  AgentDine: { x: -4, y: 2, z: -2 },
+  "kube-triage": { x: 4, y: 1, z: -2 },
+  "OpenAI LLM Gateway": { x: 0, y: 2.5, z: -3 },
+  "Algorithmic trading engine": { x: -4, y: -1.5, z: 1 },
+  "D&Z Cartique": { x: 4, y: -0.5, z: 0 },
+  QLSS: { x: 0, y: -1.5, z: 1 },
 };
 
 const PROJECT_TAGS: Record<string, string[]> = {
@@ -93,7 +93,7 @@ function ProjectNode({ name, x, y, z, onSelect }: { name: string; x: number; y: 
         onPointerOut={() => setHovered(false)}
       />
       <Html
-        position={[x, y + radius + 0.5, z]}
+        position={[x, y + radius + 1.2, z]}
         style={{
           pointerEvents: "none",
           color: "#fff",
