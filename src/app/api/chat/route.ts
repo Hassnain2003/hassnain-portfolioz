@@ -66,14 +66,14 @@ export async function POST(request: Request) {
   }
 
   // 4. Parse and validate input
-  let body: { message: string };
+  let body: { message: string; history?: { role: string; content: string }[] };
   try {
-    body = (await request.json()) as { message: string };
+    body = (await request.json()) as { message: string; history?: { role: string; content: string }[] };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { message } = body;
+  const { message, history } = body;
   if (!message || typeof message !== "string") {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
@@ -93,9 +93,16 @@ export async function POST(request: Request) {
     );
   }
 
-  // 6. Call Gemini API
+  // 6. Call Gemini API with history
   let geminiResponse: Response;
   try {
+    const contents = history && history.length > 0
+      ? history.map((m) => ({
+          role: m.role === "assistant" ? "model" : "user",
+          parts: [{ text: m.content }],
+        }))
+      : [{ parts: [{ text: message }] }];
+
     geminiResponse = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
       method: "POST",
       headers: {
@@ -105,11 +112,7 @@ export async function POST(request: Request) {
         systemInstruction: {
           parts: [{ text: SYSTEM_PROMPT }],
         },
-        contents: [
-          {
-            parts: [{ text: message }],
-          },
-        ],
+        contents,
         generationConfig: {
           temperature: 0.3,
           maxOutputTokens: 250,

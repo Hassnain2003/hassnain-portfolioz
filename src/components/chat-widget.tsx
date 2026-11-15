@@ -9,36 +9,7 @@ type ChatMessage = {
   sources?: string[];
 };
 
-const FAQ_ENTRIES = [
-  {
-    q: "Who are you?",
-    a: `${facts.name} — ${facts.role}`,
-  },
-  {
-    q: "Where are you based?",
-    a: `${facts.location}.`,
-  },
-  {
-    q: "What's your education?",
-    a: facts.education,
-  },
-  {
-    q: "How can I contact you?",
-    a: `Email: ${facts.links.email}. GitHub: ${facts.links.github}. LinkedIn: ${facts.links.linkedin}.`,
-  },
-  {
-    q: "What projects have you built?",
-    a: facts.projects.map((p) => p.name).join(", "),
-  },
-  {
-    q: "What's your experience?",
-    a: facts.experience.map((e) => `${e.role} at ${e.employer} (${e.period})`).join("; "),
-  },
-  {
-    q: "What are your skills?",
-    a: facts.skills.map((s) => `${s.area}: ${s.items.join(", ")}`).join("; "),
-  },
-];
+const SUGGESTIONS = ["Best project?", "Tech stack?", "Is he open to work?", "Why hire him?"];
 
 export function ChatWidget() {
   const [open, setOpen] = useState(false);
@@ -47,6 +18,7 @@ export function ChatWidget() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const hasGreeted = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,7 +30,19 @@ export function ChatWidget() {
 
   const toggleChat = useCallback(() => {
     setOpen((o) => !o);
-    if (!open && error) setError(false);
+    if (!open) {
+      if (!hasGreeted.current) {
+        hasGreeted.current = true;
+        setMessages([
+          {
+            role: "assistant",
+            content: "Hi, I'm Hassnain's assistant. Ask me about his projects, stack, or experience.",
+            sources: [],
+          },
+        ]);
+      }
+      if (error) setError(false);
+    }
   }, [open, error]);
 
   const closeChat = useCallback(() => {
@@ -67,77 +51,65 @@ export function ChatWidget() {
     setError(false);
   }, []);
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || loading) return;
+  const sendMessage = useCallback(
+    async (text: string) => {
+      if (!text.trim() || loading) return;
 
-    const userMessage: ChatMessage = { role: "user", content: text };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setLoading(true);
-    setError(false);
+      const userMessage: ChatMessage = { role: "user", content: text };
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      setInput("");
+      setLoading(true);
+      setError(false);
 
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
-      });
+      try {
+        // Send last 8 messages as history for follow-up context
+        const history = newMessages.slice(-8).map((m) => ({
+          role: m.role,
+          content: m.content,
+        }));
 
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: text, history }),
+        });
 
-      const data = await res.json();
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
 
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: data.answer ?? "I don't know, please email me at abbashussnain818@gmail.com",
-        sources: data.sources ?? [],
-      };
-      setMessages((prev) => [...prev, assistantMessage]);
-    } catch {
-      setError(true);
-      // Degrade to static FAQ: try to find a matching answer
-      const lower = text.toLowerCase().trim();
+        const data = await res.json();
 
-      // Greetings
-      const greetings = ["hi", "hello", "hey", "yo", "greetings", "sup"];
-      if (greetings.some((g) => lower === g || lower.startsWith(g + " "))) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: `Hi — I'm the static fallback for ${facts.name}'s portfolio. Ask me about projects, experience, skills, or how to get in touch. (AI assistant is temporarily unavailable.)`,
-            sources: [],
-          },
-        ]);
-        setLoading(false);
-        return;
-      }
-
-      const match = FAQ_ENTRIES.find((f) =>
-        lower.includes(f.q.toLowerCase().split(" ")[0])
-      );
-      setMessages((prev) => [
-        ...prev,
-        {
+        const assistantMessage: ChatMessage = {
           role: "assistant",
-          content: match
-            ? `${match.a} (static fallback — AI assistant unavailable)`
-            : "I don't know, please email me at abbashussnain818@gmail.com. The AI assistant is temporarily unavailable.",
-          sources: [],
-        },
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  }, [input, loading]);
+          content: data.answer ?? "I don't know, please email me at abbashussnain818@gmail.com",
+          sources: data.sources ?? [],
+        };
+        setMessages((prev) => [...prev, assistantMessage]);
+      } catch {
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [messages, loading]
+  );
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    sendMessage();
-  }, [sendMessage]);
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      sendMessage(input);
+    },
+    [input, sendMessage]
+  );
+
+  const handleSuggestion = useCallback(
+    (text: string) => {
+      sendMessage(text);
+    },
+    [sendMessage]
+  );
 
   if (!open) {
     return (
@@ -166,21 +138,17 @@ export function ChatWidget() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-solid border-border/50 bg-panel/50">
           <h3 className="font-mono font-semibold text-foreground">Ask my agent</h3>
           <button
-            onClick={toggleChat}
-            className="h-6 w-6 rounded border border-solid border-current/30 flex items-center justify-center text-xs font-mono text-foreground hover:bg-accent/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            onClick={closeChat}
+            className="h-8 w-8 rounded border border-solid border-current/30 flex items-center justify-center text-xs text-muted hover:text-accent transition-colors"
             aria-label="Close chat"
           >
-            <span className="sr-only">close</span>
-            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <p className="text-xs font-mono text-muted">
-            AI assistant. Answers are based on the facts on this site.
-          </p>
+        <div className="p-4 max-h-96 overflow-y-auto space-y-4">
           <div className="space-y-3">
             {messages.map((msg, i) => (
               <div
@@ -190,7 +158,7 @@ export function ChatWidget() {
                 }`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-lg text-sm font-mono ${
+                  className={`max-w-[80%] p-3 rounded-lg text-sm font-sans ${
                     msg.role === "user"
                       ? "bg-accent text-accent-foreground"
                       : "bg-panel/50 text-foreground border border-solid border-border/50"
@@ -210,13 +178,13 @@ export function ChatWidget() {
             {loading && (
               <div className="flex items-start gap-2">
                 <div className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                <span className="text-xs font-mono text-muted">Thinking…</span>
+                <span className="text-xs font-sans text-muted">Thinking…</span>
               </div>
             )}
             {error && (
               <div className="p-3 rounded bg-accent/10 border border-solid border-accent/30 flex items-start gap-2">
-                <p className="text-xs font-mono text-accent">
-                  AI assistant unavailable. Static answers may be limited.
+                <p className="text-xs font-sans text-accent">
+                  AI assistant unavailable. Please try again or email me at {facts.links.email}.
                 </p>
                 <button
                   onClick={() => setError(false)}
@@ -227,6 +195,22 @@ export function ChatWidget() {
               </div>
             )}
           </div>
+
+          {/* Suggestion chips */}
+          {messages.length <= 1 && (
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleSuggestion(s)}
+                  className="px-2 py-1 text-[10px] font-mono border border-accent/30 rounded-full text-accent/80 hover:text-accent hover:border-accent transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
 
@@ -238,12 +222,12 @@ export function ChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about my projects, experience, or skills…"
               disabled={loading}
-              className="flex-1 px-3 py-2 text-sm font-mono text-foreground bg-transparent border-none outline-none placeholder:text-muted/60"
+              className="flex-1 px-3 py-2 text-sm font-sans text-foreground bg-transparent border-none outline-none placeholder:text-muted/60"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="px-3 py-2 text-xs font-mono text-foreground bg-accent text-accent-foreground rounded hover:bg-accent/90 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="px-3 py-2 text-xs font-sans text-foreground bg-accent text-accent-foreground rounded hover:bg-accent/90 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               Send
             </button>
@@ -257,13 +241,11 @@ export function ChatWidget() {
       <div className="mt-2 flex justify-end">
         <button
           onClick={() => {
-            setOpen(false);
-            setMessages([]);
-            setError(false);
+            closeChat();
           }}
           className="text-[10px] font-mono text-muted hover:text-accent transition-colors"
         >
-          Clear chat
+          Close chat
         </button>
       </div>
     </div>
