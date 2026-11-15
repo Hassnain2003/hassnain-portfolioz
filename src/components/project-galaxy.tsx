@@ -29,12 +29,12 @@ const PROJECT_META: Record<string, {
 };
 
 const PROJECT_POSITIONS: Record<string, { x: number; y: number; z: number }> = {
-  AgentDine: { x: -5, y: 3, z: -4 },
-  "kube-triage": { x: 5, y: 2, z: -2 },
-  "OpenAI LLM Gateway": { x: 0, y: 5, z: -6 },
-  "Algorithmic trading engine": { x: -6, y: -1, z: 1 },
-  "D&Z Cartique": { x: 5, y: -2, z: 2 },
-  QLSS: { x: 0, y: -4, z: 3 },
+  AgentDine: { x: -3.5, y: 2, z: -3 },
+  "kube-triage": { x: 3.5, y: 1, z: -3 },
+  "OpenAI LLM Gateway": { x: 0, y: 4, z: -5 },
+  "Algorithmic trading engine": { x: -3.5, y: -1.5, z: 0 },
+  "D&Z Cartique": { x: 3.5, y: -1.5, z: 1 },
+  QLSS: { x: 0, y: -3, z: 2 },
 };
 
 const PROJECT_TAGS: Record<string, string[]> = {
@@ -208,7 +208,7 @@ export function ProjectGalaxy() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Graph container */}
-          <div className="h-[320px] md:h-[400px] lg:h-[700px] rounded-2xl border border-border/50 bg-black/30 backdrop-blur-sm relative overflow-hidden">
+          <div className="w-full h-[360px] md:h-[400px] lg:h-[700px] rounded-2xl border border-border/50 bg-black/30 backdrop-blur-sm relative overflow-hidden">
             <Canvas camera={{ position: [0, 0, 12], fov: 45 }} shadows dpr={[1, 1.5]} gl={{ antialias: true, powerPreference: "high-performance" }}>
               <ambientLight intensity={0.4} />
               <pointLight position={[10, 10, 10]} intensity={0.8} color="#00f2ff" />
