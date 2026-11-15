@@ -161,11 +161,19 @@ export async function POST(request: Request) {
   // 8. Validate sources against facts
   parsed.sources = validateSources(parsed.sources ?? []);
 
-  // 9. If no sources and not a clear "I don't know", still be safe
-  if (!parsed.sources || parsed.sources.length === 0) {
-    if (!parsed.answer.toLowerCase().includes("i don't know")) {
-      parsed.answer = "I don't know, please email me at abbashussnain818@gmail.com";
-    }
+  // 9. Safety net only: truly ungrounded answers (no sources AND model did not
+  // explicitly say "i don't know" / off-topic redirect) get replaced.
+  // Valid grounded answers and off-topic redirects pass through untouched.
+  const isOffTopicRedirect = /can't check|can't (?:check|help with that)|i can tell you about/i.test(
+    parsed.answer
+  );
+  const saysDontKnow = /i don't know/i.test(parsed.answer);
+  if (
+    (!parsed.sources || parsed.sources.length === 0) &&
+    !saysDontKnow &&
+    !isOffTopicRedirect
+  ) {
+    parsed.answer = "I don't know, please email me at abbashussnain818@gmail.com";
   }
 
   return NextResponse.json(parsed);
