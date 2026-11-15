@@ -5,7 +5,7 @@ import { facts } from "@/data/facts";
 const contactBtn = (href: string, label: string) => (
   <a
     href={href}
-    className="btn btn-primary hover-lift"
+    className="flex items-center gap-2 px-3 py-2 rounded-lg border border-solid border-accent/30 text-accent font-mono text-xs font-bold uppercase tracking-tighter bg-accent/5 hover:bg-accent/10 hover:border-accent hover:shadow-[0_0_15px_rgba(0,242,255,0.4)] transition-all duration-200"
     target={href.startsWith("mailto") ? undefined : "_blank"}
     rel={href.startsWith("mailto") ? undefined : "noopener noreferrer"}
   >
@@ -24,24 +24,21 @@ export function ContactSection() {
         />
       </div>
 
-      <div className="section-header mb-10">
+      <div className="section-header mb-8">
         <h2 className="text-heading text-foreground mb-2">Contact</h2>
+        <p className="text-subhead text-muted/70">Get in touch</p>
       </div>
 
-      <div className="glass p-8 md:p-12 rounded-2xl max-w-2xl mx-auto text-center">
-        <div className="flex justify-center gap-4 mb-8">
+      <div className="glass p-8 rounded-2xl border border-border/50 max-w-[400px] mx-auto text-center">
+        <div className="flex justify-center gap-3 mb-6">
           {contactBtn(resumeHref, "Resume")}
           {contactBtn(facts.links.github, "GitHub")}
           {contactBtn(facts.links.linkedin, "LinkedIn")}
           {contactBtn(`mailto:${facts.links.email}`, "Email")}
         </div>
-
-        <p className="text-sm text-muted/90 font-mono mb-6">
-          {facts.name} · {facts.location}
-        </p>
         <a
           href={`mailto:${facts.links.email}`}
-          className="text-accent font-mono text-sm underline underline-offset-4 hover:text-accent/80 transition-colors hover-lift"
+          className="text-accent font-mono text-sm underline underline-offset-4 hover:text-accent/80 hover-lift"
         >
           {facts.links.email}
         </a>
